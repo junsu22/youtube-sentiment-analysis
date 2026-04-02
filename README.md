@@ -70,7 +70,7 @@
 ```
 📁 youtube-sentiment-analysis/
 ├── 📄 README.md
-├── 📄 파이프라인.py
+├── 📄 pipeline.py
 ├── 📁 images/
 
 ```
