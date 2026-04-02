@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4조 - 유튜브 댓글 감성분석 파이프라인 보고서</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f5f7fa;
+    color: #2c3e50;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  /* ── 커버 ── */
+  .cover {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #fff;
+    text-align: center;
+    padding: 90px 40px 80px;
+  }
+  .cover .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 6px 20px;
+    font-size: 13px;
+    letter-spacing: 2px;
+    margin-bottom: 28px;
+  }
+  .cover h1 {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+  .cover h2 {
+    font-size: 20px;
+    font-weight: 300;
+    color: #a8c0e8;
+    margin-bottom: 40px;
+  }
+  .cover .meta {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .cover .meta-item {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 14px 28px;
+    min-width: 140px;
+  }
+  .cover .meta-item .label {
+    font-size: 11px;
+    color: #a8c0e8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .cover .meta-item .value {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  /* ── 레이아웃 ── */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 50px 30px;
+  }
+
+  /* ── 섹션 헤더 ── */
+  .section {
+    margin-bottom: 60px;
+  }
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    background: #0f3460;
+    color: #fff;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .section-title h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+    border-bottom: 3px solid #0f3460;
+    padding-bottom: 4px;
+  }
+
+  /* ── 카드 ── */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    margin-bottom: 20px;
+  }
+
+  /* ── 파이프라인 흐름도 ── */
+  .pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    align-items: center;
+    justify-content: center;
+  }
+  .pipe-step {
+    text-align: center;
+    padding: 16px 14px;
+    min-width: 110px;
+  }
+  .pipe-icon {
+    font-size: 30px;
+    margin-bottom: 6px;
+  }
+  .pipe-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a2e;
+    line-height: 1.4;
+  }
+  .pipe-sub {
+    font-size: 10.5px;
+    color: #7f8c8d;
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+  .pipe-arrow {
+    font-size: 20px;
+    color: #bdc3c7;
+    padding: 0 2px;
+    align-self: center;
+  }
+
+  /* ── 두 컬럼 그리드 ── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── 이미지 ── */
+  .fig-wrap {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    margin-bottom: 20px;
+  }
+  .fig-wrap img {
+    width: 100%;
+    display: block;
+  }
+  .fig-cap {
+    padding: 12px 18px;
+    font-size: 13px;
+    color: #555;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+  }
+  .fig-cap strong { color: #0f3460; }
+
+  /* ── 하이라이트 박스 ── */
+  .highlight-box {
+    background: linear-gradient(135deg, #eef2ff, #f0f8ff);
+    border-left: 4px solid #0f3460;
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 16px;
+  }
+  .highlight-box h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f3460;
+    margin-bottom: 8px;
+  }
+
+  /* ── 테이블 ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  th {
+    background: #0f3460;
+    color: #fff;
+    padding: 11px 16px;
+    text-align: center;
+    font-weight: 600;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #ecf0f1;
+    text-align: center;
+  }
+  tr:nth-child(even) td { background: #f8f9fa; }
+  tr:hover td { background: #eef2ff; }
+  .best { color: #27ae60; font-weight: 700; }
+
+  /* ── 태그 ── */
+  .tag {
+    display: inline-block;
+    background: #eef2ff;
+    color: #0f3460;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 2px;
+  }
+
+  /* ── 코드 블록 ── */
+  .code-block {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+  .code-block .comment { color: #6c7086; }
+  .code-block .keyword { color: #cba6f7; }
+  .code-block .string { color: #a6e3a1; }
+  .code-block .func { color: #89b4fa; }
+
+  /* ── 결론 카드 ── */
+  .conclusion {
+    background: linear-gradient(135deg, #0f3460, #16213e);
+    color: #fff;
+    border-radius: 12px;
+    padding: 36px 40px;
+    text-align: center;
+  }
+  .conclusion h3 { font-size: 20px; margin-bottom: 16px; }
+  .conclusion p { font-size: 14px; color: #a8c0e8; line-height: 2; }
+
+  /* ── 구분선 ── */
+  .divider {
+    border: none;
+    border-top: 1px solid #e8ecf0;
+    margin: 40px 0;
+  }
+
+  .inline-list { padding-left: 20px; }
+  .inline-list li { margin-bottom: 6px; }
+
+  .stat-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .stat-box {
+    flex: 1;
+    min-width: 130px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-box .num {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f3460;
+  }
+  .stat-box .desc {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ 커버 ══════════ -->
+<div class="cover">
+  <div class="badge">인공지능 응용 프로젝트 · 4조</div>
+  <h1>유튜브 댓글 감성분석 파이프라인</h1>
+  <h2>CNN / LSTM / Bi-LSTM 모델 비교 연구</h2>
+  <div class="meta">
+    <div class="meta-item">
+      <div class="label">팀명</div>
+      <div class="value">4조</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">팀명</div>
+      <div class="value">4조</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Task</div>
+      <div class="value">Binary Sentiment</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Language</div>
+      <div class="value">Korean NLP</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 본문 ══════════ -->
+<div class="container">
+
+  <!-- 1. 프로젝트 개요 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">1</div>
+      <h3>프로젝트 개요</h3>
+    </div>
+    <div class="card">
+      <p>본 프로젝트는 유튜브에서 수집한 한국어 댓글을 대상으로 <strong>긍정(Positive) / 부정(Negative) 이진 감성분석</strong>을 수행하는 딥러닝 파이프라인을 구축하고, 세 가지 텍스트 분류 모델(CNN, LSTM, Bi-LSTM)의 성능을 비교 분석하였습니다.</p>
+      <div class="stat-row">
+        <div class="stat-box"><div class="num">3</div><div class="desc">비교 모델</div></div>
+        <div class="stat-box"><div class="num">5,000</div><div class="desc">어휘 사전 크기</div></div>
+        <div class="stat-box"><div class="num">70 / 15 / 15</div><div class="desc">Train/Valid/Test 비율</div></div>
+        <div class="stat-box"><div class="num">Okt</div><div class="desc">한국어 형태소 분석기</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 전체 파이프라인 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">2</div>
+      <h3>전체 파이프라인 구조</h3>
+    </div>
+    <div class="card">
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-icon">📥</div>
+          <div class="pipe-label">댓글 수집</div>
+          <div class="pipe-sub">comments.csv</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🧹</div>
+          <div class="pipe-label">텍스트 전처리</div>
+          <div class="pipe-sub">HTML·URL·특수문자<br>제거 + 한국어 필터</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🏷️</div>
+          <div class="pipe-label">라벨링</div>
+          <div class="pipe-sub">수동 / 자동 확장<br>0=부정, 1=긍정</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">✂️</div>
+          <div class="pipe-label">형태소 분석</div>
+          <div class="pipe-sub">Okt (명사·형용사·<br>동사 추출)</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🔢</div>
+          <div class="pipe-label">시퀀스 변환</div>
+          <div class="pipe-sub">Tokenizer<br>+ Padding</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">🤖</div>
+          <div class="pipe-label">모델 학습</div>
+          <div class="pipe-sub">CNN / LSTM<br>/ Bi-LSTM</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">
+          <div class="pipe-icon">📊</div>
+          <div class="pipe-label">평가 & 비교</div>
+          <div class="pipe-sub">Acc · F1 · Precision<br>· Recall</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 데이터 퍼널 -->
+    <div class="fig-wrap">
+      <img src="이미지모음/01_data_funnel_auto_ko.png" alt="데이터 처리 퍼널">
+      <div class="fig-cap"><strong>[Figure 1]</strong> 데이터 처리 단계별 퍼널 — 수집 댓글이 전처리·한국어 필터링·토큰화를 거치며 학습 가능한 형태로 축소되는 과정</div>
+    </div>
+  </div>
+
+  <!-- 3. 데이터 수집 및 전처리 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">3</div>
+      <h3>데이터 수집 및 전처리</h3>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4 style="margin-bottom:10px; color:#0f3460;">📌 전처리 단계</h4>
+        <ul class="inline-list">
+          <li>HTML 태그 제거 <span class="tag">&lt;.*?&gt;</span></li>
+          <li>URL 제거 <span class="tag">http[s]?://</span></li>
+          <li>멘션 제거 <span class="tag">@username</span></li>
+          <li>한글·영문·숫자 외 문자 제거</li>
+          <li>연속 공백 정규화</li>
+          <li>한국어 포함 댓글만 유지</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:10px; color:#0f3460;">🔤 형태소 분석 (Okt)</h4>
+        <ul class="inline-list">
+          <li>추출 품사: <span class="tag">Noun</span> <span class="tag">Adjective</span> <span class="tag">Verb</span></li>
+          <li>정규화(norm=True) + 어간 추출(stem=True)</li>
+          <li>2글자 이상 토큰만 사용</li>
+          <li>불용어 18개 제거</li>
+          <li>(진짜·너무·정말·댓글·영상 등)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <h4>💡 라벨링 전략: 자동 확장 우선 사용</h4>
+      <p><code>auto_full_results/comments_labeled_auto_full.csv</code>가 존재하면 우선 사용하고, 없으면 수동 라벨 파일(<code>comments_labeled.csv</code>)을 사용합니다. 이를 통해 소규모 수동 라벨에서 대규모 학습 데이터로 확장할 수 있습니다.</p>
+    </div>
+
+    <div class="fig-wrap">
+      <img src="이미지모음/02_sentiment_donut_auto_ko.png" alt="감성 분포 도넛 차트">
+      <div class="fig-cap"><strong>[Figure 2]</strong> 라벨링 데이터의 긍정/부정 분포 — 클래스 불균형 여부를 시각적으로 확인</div>
+    </div>
+  </div>
+
+  <!-- 4. 모델 구조 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">4</div>
+      <h3>딥러닝 모델 구조</h3>
+    </div>
+
+    <div class="highlight-box">
+      <h4>공통 하이퍼파라미터</h4>
+      <p>
+        <span class="tag">Vocab Size: 5,000</span>
+        <span class="tag">Embed Dim: 64</span>
+        <span class="tag">Learning Rate: 1e-3</span>
+        <span class="tag">Batch Size: 32</span>
+        <span class="tag">Max Epochs: 12</span>
+        <span class="tag">Optimizer: Adam</span>
+        <span class="tag">Loss: Binary Crossentropy</span>
+        <span class="tag">EarlyStopping: patience=3</span>
+      </p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h4 style="color:#0f3460; margin-bottom:10px;">🔷 CNN 모델</h4>
+        <div class="code-block">
+<span class="keyword">Embedding</span>(vocab, 64, input_length)<br>
+<span class="func">Conv1D</span>(128, kernel=5, relu)<br>
+<span class="func">GlobalMaxPooling1D</span>()<br>
+<span class="func">Dense</span>(64, relu)<br>
+<span class="func">Dropout</span>(0.3)<br>
+<span class="func">Dense</span>(1, sigmoid)
+        </div>
+        <p style="font-size:13px; color:#555;">Conv1D로 지역적 n-gram 패턴을 포착. 학습 속도가 빠르며 단기 패턴에 강점.</p>
+      </div>
+      <div class="card">
+        <h4 style="color:#0f3460; margin-bottom:10px;">🔶 LSTM 모델</h4>
+        <div class="code-block">
+<span class="keyword">Embedding</span>(vocab, 64, input_length)<br>
+<span class="func">LSTM</span>(64)<br>
+<span class="func">Dense</span>(32, relu)<br>
+<span class="func">Dropout</span>(0.3)<br>
+<span class="func">Dense</span>(1, sigmoid)
+        </div>
+        <p style="font-size:13px; color:#555;">순방향 시퀀스 의존성 학습. 장거리 문맥 파악에 유리한 순환 구조.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h4 style="color:#0f3460; margin-bottom:10px;">🔺 Bi-LSTM 모델</h4>
+      <div class="code-block">
+<span class="keyword">Embedding</span>(vocab, 64, input_length)<br>
+<span class="func">Bidirectional</span>(<span class="func">LSTM</span>(64))  <span class="comment"># 순방향 + 역방향 = 128dim</span><br>
+<span class="func">Dense</span>(32, relu)<br>
+<span class="func">Dropout</span>(0.3)<br>
+<span class="func">Dense</span>(1, sigmoid)
+      </div>
+      <p style="font-size:13px; color:#555;">양방향 문맥을 동시에 학습해 문장 전체의 의미를 더 풍부하게 포착. 세 모델 중 가장 많은 파라미터를 사용.</p>
+    </div>
+  </div>
+
+  <!-- 5. 학습 결과 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">5</div>
+      <h3>학습 결과 및 모델 성능 비교</h3>
+    </div>
+
+    <div class="fig-wrap">
+      <img src="이미지모음/03_model_comparison_auto_ko.png" alt="모델 성능 비교">
+      <div class="fig-cap"><strong>[Figure 3]</strong> CNN / LSTM / Bi-LSTM 테스트 정확도 및 F1-Score 비교</div>
+    </div>
+
+    <div class="fig-wrap">
+      <img src="이미지모음/04_model_metric_heatmap_auto_ko.png" alt="모델 지표 히트맵">
+      <div class="fig-cap"><strong>[Figure 4]</strong> 모델별 Accuracy · Precision · Recall · F1-Score 히트맵 — 지표 간 상대적 강약점 한눈에 비교</div>
+    </div>
+
+    <div class="fig-wrap">
+      <img src="이미지모음/14_primary_confusion_matrix_auto_ko.png" alt="혼동 행렬">
+      <div class="fig-cap"><strong>[Figure 5]</strong> 최고 성능 모델의 혼동 행렬(Confusion Matrix) — TP/TN/FP/FN 분포</div>
+    </div>
+
+    <div class="card">
+      <h4 style="margin-bottom:14px; color:#0f3460;">📋 모델 성능 요약표 (Test Set 기준)</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>모델</th>
+            <th>Accuracy</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+            <th>학습 전략</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>CNN</strong></td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>지역 패턴 포착</td>
+          </tr>
+          <tr>
+            <td><strong>LSTM</strong></td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>순방향 시퀀스</td>
+          </tr>
+          <tr>
+            <td><strong>Bi-LSTM</strong></td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>양방향 문맥</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px; color:#999; margin-top:10px;">※ 실행 결과값은 위 시각화 차트(Figure 3, 4) 참조</p>
+    </div>
+  </div>
+
+  <!-- 6. 감성 분석 심화 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">6</div>
+      <h3>감성 분석 심화 분석</h3>
+    </div>
+
+    <div class="grid-2">
+      <div class="fig-wrap">
+        <img src="이미지모음/07_positive_keywords_auto_ko.png" alt="긍정 키워드">
+        <div class="fig-cap"><strong>[Figure 6]</strong> 긍정 댓글 주요 키워드</div>
+      </div>
+      <div class="fig-wrap">
+        <img src="이미지모음/08_negative_keywords_auto_ko.png" alt="부정 키워드">
+        <div class="fig-cap"><strong>[Figure 7]</strong> 부정 댓글 주요 키워드</div>
+      </div>
+    </div>
+
+    <div class="fig-wrap">
+      <img src="이미지모음/06_average_likes_by_sentiment_auto_ko.png" alt="감성별 평균 좋아요">
+      <div class="fig-cap"><strong>[Figure 8]</strong> 감성 유형별 평균 좋아요 수 — 긍정/부정 댓글의 사용자 반응 차이 분석</div>
+    </div>
+  </div>
+
+  <!-- 7. 시계열 분석 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">7</div>
+      <h3>댓글 시계열 트렌드 분석</h3>
+    </div>
+
+    <div class="fig-wrap">
+      <img src="이미지모음/11_yearly_comment_trend_auto_ko.png" alt="연도별 댓글 트렌드">
+      <div class="fig-cap"><strong>[Figure 9]</strong> 연도별 댓글 수 및 감성 트렌드 변화</div>
+    </div>
+
+    <div class="fig-wrap">
+      <img src="이미지모음/12_monthly_comment_trend_auto_ko.png" alt="월별 댓글 트렌드">
+      <div class="fig-cap"><strong>[Figure 10]</strong> 월별 댓글 수 및 감성 트렌드 — 계절적 패턴 및 이벤트 영향 파악</div>
+    </div>
+  </div>
+
+  <!-- 8. 결론 -->
+  <div class="section">
+    <div class="section-title">
+      <div class="section-num">8</div>
+      <h3>결론 및 시사점</h3>
+    </div>
+
+    <div class="grid-2">
+      <div class="highlight-box">
+        <h4>✅ 주요 성과</h4>
+        <ul class="inline-list" style="margin-top:6px;">
+          <li>한국어 댓글 전처리 파이프라인 자동화</li>
+          <li>Okt 기반 품사 필터링으로 노이즈 제거</li>
+          <li>자동 확장 라벨링으로 학습 데이터 확충</li>
+          <li>세 모델 성능 체계적 비교 및 저장</li>
+        </ul>
+      </div>
+      <div class="highlight-box">
+        <h4>🔍 한계 및 개선 방향</h4>
+        <ul class="inline-list" style="margin-top:6px;">
+          <li>라벨 품질이 자동 확장에 의존</li>
+          <li>BERT/KoELECTRA 등 사전학습 모델 미적용</li>
+          <li>클래스 불균형 처리 추가 검토 필요</li>
+          <li>도메인 특화 불용어 사전 확장 여지</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="conclusion">
+      <h3>📝 종합 요약</h3>
+      <p>
+        본 프로젝트는 유튜브 한국어 댓글에 대한 감성분석 파이프라인을 구축하여<br>
+        CNN, LSTM, Bi-LSTM 세 모델의 이진 분류 성능을 체계적으로 비교하였습니다.<br><br>
+        Okt 형태소 분석기를 활용한 품사 기반 토큰화와 자동 라벨 확장 전략을 통해<br>
+        한국어 텍스트의 특수성을 효과적으로 처리하였으며,<br>
+        EarlyStopping을 적용해 과적합을 방지하고 최적 모델 가중치를 보존하였습니다.
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+  <p style="text-align:center; font-size:13px; color:#aaa;">4조</p>
+
+</div>
+</body>
+</html>
