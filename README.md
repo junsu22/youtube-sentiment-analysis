@@ -70,11 +70,9 @@
 ```
 📁 youtube-sentiment-analysis/
 ├── 📄 README.md
-├── 📄 .gitignore
 ├── 📄 파이프라인.py
 ├── 📁 images/
-└── 📁 report/
-    └── 4조_보고서.html
+
 ```
 
 <br>
